@@ -137,16 +137,21 @@ namespace SamsungHotkeys
         {
             mDispatcher.BeginInvoke(new Action(() =>
             {
-                byte[] levels;
-                int brightness = Controls.ScreenBrightness.GetScreenBrightness(out levels);
-                int notchSize = 95 / 8;
+                int currentBrightness = biosIface.GetLCDBacklightBrightness();
 
-                int newBrightness = Math.Max(5, brightness - notchSize);
-                Controls.ScreenBrightness.SetScreenBrightness(newBrightness);
+                // Levels are from 1 - 8
+                if (currentBrightness == 1)
+                {
+                    Debug.WriteLine($"Current brightness is {currentBrightness}. Can't go any lower!");
+                    ShowLCDBrightness(currentBrightness);
+                    return;
+                }
 
-                brightness = Controls.ScreenBrightness.GetScreenBrightness(out levels);
+                int newBrightness = currentBrightness - 1;
+                Debug.WriteLine($"Current brightness is {currentBrightness}. Changing to {newBrightness}");
 
-                ShowOSD(Hotkey.ScreenBrightnessDown, brightness);
+                biosIface.SetLCDBacklightBrightness(newBrightness);
+                ShowLCDBrightness(newBrightness);
             }));
         }
 
@@ -154,18 +159,26 @@ namespace SamsungHotkeys
         {
             mDispatcher.BeginInvoke(new Action(() =>
             {
-                byte[] levels;
-                int brightness = Controls.ScreenBrightness.GetScreenBrightness(out levels);
-                int notchSize = 95 / 8;
+                int currentBrightness = biosIface.GetLCDBacklightBrightness();
 
-                int newBrightness = Math.Min(100, brightness + notchSize);
-                Controls.ScreenBrightness.SetScreenBrightness(newBrightness);
+                if (currentBrightness == 8)
+                {
+                    Debug.WriteLine($"Current brightness is {currentBrightness}. Can't go any higher!");
+                    ShowLCDBrightness(currentBrightness);
+                    return;
+                }
 
-                brightness = Controls.ScreenBrightness.GetScreenBrightness(out levels);
+                int newBrightness = currentBrightness + 1;
+                Debug.WriteLine($"Current brightness is {currentBrightness}. Changing to {newBrightness}");
 
-                ShowOSD(Hotkey.ScreenBrightnessUp, brightness);
-                //ShowProgressOSDWindow("Brightness", brightness);
+                biosIface.SetLCDBacklightBrightness(newBrightness);
+                ShowLCDBrightness(newBrightness);
             }));
+        }
+
+        private void ShowLCDBrightness(int level)
+        {
+            ShowOSD(Hotkey.ScreenBrightnessDown, (int)((level - 1) * 100 / 7.0));
         }
 
         private void ToggleWireless()

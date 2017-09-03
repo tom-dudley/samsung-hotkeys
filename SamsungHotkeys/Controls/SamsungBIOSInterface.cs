@@ -171,6 +171,42 @@ namespace SamsungHotkeys.Controls
                 throw new MethodInvocationException("SetKbBacklightBrightness");
             }
         }
+
+        public int GetLCDBacklightBrightness()
+        {
+            byte[] buffer = new byte[] { 0, 0, 0, 0 };
+            int rv = NativeMethods.CallBIOSInterface((int)BIOSFunctions.GetBrightnessLevel, buffer);
+            if (rv != 0)
+            {
+                Debug.WriteLine("Error reading LCD backlight brightness!");
+                throw new MethodInvocationException("GetLCDBacklightBrightness");
+            }
+            return buffer[0];
+        }
+
+        public void SetLCDBacklightBrightness(int brightness)
+        {
+            if (brightness < 0 || brightness > 8)
+            {
+                throw new ArgumentException("Brightness level should be between 0 and 8");
+            }
+            
+            var currentBrightness = GetLCDBacklightBrightness();
+
+            if (currentBrightness == brightness)
+                return;
+
+            if (brightness != 0)
+            {
+                // Required for stepping quirk. Brightness doesn't get set otherwise on some machines.
+                // See: https://github.com/torvalds/linux/blob/master/drivers/platform/x86/samsung-laptop.c#L503-L521
+                byte[] zeroBuffer = new byte[] { 0, 0, 0, 0 }; 
+                NativeMethods.CallBIOSInterface((int)BIOSFunctions.SetBrightnessLevel, zeroBuffer);
+            }
+
+            byte[] buffer = new byte[] { (byte)brightness, 0, 0, 0 };
+            int rv = NativeMethods.CallBIOSInterface((int)BIOSFunctions.SetBrightnessLevel, buffer);
+        }
         
         public void SetVolumeMuteLight(bool on)
         {
@@ -257,7 +293,8 @@ namespace SamsungHotkeys.Controls
                                             // 0x10 = Chargeable USB
                                             // 0x20 = Fast Start
 
-            GetBrightnessMode = 0x10,       // status in byte 0
+            GetBrightnessLevel = 0x10,       // level in byte 0
+            SetBrightnessLevel = 0x11,       // level in byte 0
 
             GetEtiquetteMode = 0x31,        // status in byte 0
 
