@@ -196,8 +196,15 @@ namespace SamsungHotkeys
         {
             int volume = Controls.WindowsAudio.GetVolume();
             bool muted = Controls.WindowsAudio.IsMuted();
-            biosIface.SetVolumeMuteLight(muted);
             ShowOSD(key, muted ? -1 : volume);
+            try
+            {
+                biosIface.SetVolumeMuteLight(muted);
+            }
+            catch
+            {
+                // Some machines don't have a volume mute light - so swallow the exception.
+            }
         }
 
         private void ShowOSD(Hotkey hotkey)
